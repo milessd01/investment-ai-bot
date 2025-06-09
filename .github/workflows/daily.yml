@@ -2,7 +2,7 @@ name: Daily Investment AI Bot
 
 on:
   schedule:
-    - cron: '30 12 * * 1-5'  # 8:30 AM EST, Monday–Friday
+    - cron: '30 12 * * 1-5'  # Runs 8:30 AM EST (12:30 UTC), Mon–Fri
   workflow_dispatch:
 
 jobs:
@@ -29,5 +29,9 @@ jobs:
       - name: Run main.py (daily picks)
         run: python main.py
 
-      - name: Run followup.py (1-week + 1-month performance)
+      - name: Run followup.py (1-week & 1-month check)
         run: python followup.py
+
+      - name: Run summary.py (Fridays only)
+        if: startsWith(github.event.schedule, '30 12') && contains('5', format('{0}', github.event.schedule))
+        run: python summary.py
