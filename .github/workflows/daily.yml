@@ -1,29 +1,33 @@
-name: Daily Investment AI Email
+name: Daily Investment AI Bot
 
 on:
   schedule:
-    - cron: '30 12 * * 1-5'  # 8:30 AM EST (12:30 UTC)
+    - cron: '30 12 * * 1-5'  # 8:30 AM EST, Monday–Friday
   workflow_dispatch:
 
 jobs:
-  send-email:
+  run-daily-investment-bot:
     runs-on: ubuntu-latest
 
+    env:
+      EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Install dependencies
-      run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-    - name: Run bot
-      env:
-        EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
-      run: python main.py
+      - name: Run main.py (daily picks)
+        run: python main.py
+
+      - name: Run followup.py (1-week + 1-month performance)
+        run: python followup.py
