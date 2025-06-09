@@ -25,7 +25,9 @@ def get_sp500_tickers():
 # Smarter undervalued stock screening
 def find_undervalued_stocks(tickers):
     undervalued = []
-    for symbol in tickers[:50]:  # Use more if desired
+
+    print("\n🔍 Screening all S&P 500 companies...")
+    for symbol in tickers:
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
@@ -34,14 +36,16 @@ def find_undervalued_stocks(tickers):
             peg = info.get("pegRatio")
             pb = info.get("priceToBook")
             div_yield = info.get("dividendYield")
-            ev_to_ebitda = info.get("enterpriseToEbitda")
 
-            # Screening criteria
+            # Log what we're seeing
+            print(f"{symbol}: PE={pe}, PEG={peg}, PB={pb}, Div={div_yield}")
+
+            # Screening criteria (loosened for more matches)
             if (
-                pe and pe < 20 and
-                peg and peg < 1.5 and
-                pb and pb < 3 and
-                div_yield and div_yield > 0.01  # > 1%
+                pe and pe < 25 and
+                peg and peg < 2 and
+                pb and pb < 4 and
+                div_yield and div_yield > 0.005  # > 0.5%
             ):
                 summary = (
                     f"{symbol} (PE: {pe:.2f}, PEG: {peg:.2f}, "
@@ -51,9 +55,8 @@ def find_undervalued_stocks(tickers):
 
         except Exception as e:
             print(f"⚠️ {symbol} skipped: {e}")
-    
-    # Print summary
-    print("\nTop undervalued picks:")
+
+    print(f"\n✅ Screening complete. {len(undervalued)} undervalued stocks found.")
     for pick in undervalued[:5]:
         print(" -", pick)
 
@@ -74,7 +77,7 @@ def send_email(subject, body):
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.send_message(msg)
         server.quit()
-        print("✅ Email sent successfully.")
+        print("📬 Email sent successfully.")
     except Exception as e:
         print("❌ Email failed:", e)
 
@@ -83,13 +86,11 @@ def main():
     tickers = get_sp500_tickers()
     print(f"Found {len(tickers)} tickers.")
 
-    print("🔍 Screening for undervalued stocks...")
     undervalued = find_undervalued_stocks(tickers)
 
     subject = "📊 Daily Undervalued S&P 500 Stocks"
     body = "Here are today's undervalued picks:\n\n" + "\n".join(undervalued or ["None found"])
 
-    print("📧 Sending email...")
     send_email(subject, body)
 
 if __name__ == "__main__":
