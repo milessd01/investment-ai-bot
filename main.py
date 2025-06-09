@@ -25,6 +25,7 @@ def get_sp500_tickers():
 # Smarter undervalued stock screening
 def find_undervalued_stocks(tickers):
     undervalued = []
+    ranked_candidates = []
 
     print("\n🔍 Screening all S&P 500 companies...")
     for symbol in tickers:
@@ -37,10 +38,18 @@ def find_undervalued_stocks(tickers):
             pb = info.get("priceToBook")
             div_yield = info.get("dividendYield")
 
-            # Log what we're seeing
             print(f"{symbol}: PE={pe}, PEG={peg}, PB={pb}, Div={div_yield}")
 
-            # Screening criteria (loosened for more matches)
+            # Save for ranking fallback
+            ranked_candidates.append({
+                "symbol": symbol,
+                "pe": pe if pe else float("inf"),
+                "peg": peg if peg else float("inf"),
+                "pb": pb if pb else float("inf"),
+                "div": div_yield if div_yield else 0.0
+            })
+
+            # Primary screen
             if (
                 pe and pe < 25 and
                 peg and peg < 2 and
@@ -56,11 +65,25 @@ def find_undervalued_stocks(tickers):
         except Exception as e:
             print(f"⚠️ {symbol} skipped: {e}")
 
-    print(f"\n✅ Screening complete. {len(undervalued)} undervalued stocks found.")
-    for pick in undervalued[:5]:
-        print(" -", pick)
+    if undervalued:
+        print(f"\n✅ Found {len(undervalued)} undervalued stocks.")
+        return undervalued
 
-    return undervalued
+    print("\n⚠️ No stocks met all criteria. Choosing best available alternatives...")
+
+    # Sort ranked candidates by PEG, then PE, then highest dividend
+    best_alternatives = sorted(
+        ranked_candidates,
+        key=lambda x: (x["peg"], x["pe"], -x["div"])
+    )[:10]
+
+    fallback_summaries = [
+        f"{c['symbol']} (PE: {c['pe']:.2f}, PEG: {c['peg']:.2f}, "
+        f"P/B: {c['pb']:.2f}, Div Yield: {c['div']*100:.2f}%)"
+        for c in best_alternatives
+    ]
+
+    return fallback_summaries
 
 # Send an email report
 def send_email(subject, body):
@@ -68,7 +91,6 @@ def send_email(subject, body):
     msg["From"] = EMAIL_SENDER
     msg["To"] = EMAIL_RECEIVER
     msg["Subject"] = subject
-
     msg.attach(MIMEText(body, "plain"))
 
     try:
@@ -86,10 +108,10 @@ def main():
     tickers = get_sp500_tickers()
     print(f"Found {len(tickers)} tickers.")
 
-    undervalued = find_undervalued_stocks(tickers)
+    picks = find_undervalued_stocks(tickers)
 
-    subject = "📊 Daily Undervalued S&P 500 Stocks"
-    body = "Here are today's undervalued picks:\n\n" + "\n".join(undervalued or ["None found"])
+    subject = "📊 Daily Investment Picks: Undervalued or Best Available"
+    body = "Here are today's best investment picks:\n\n" + "\n".join(picks)
 
     send_email(subject, body)
 
