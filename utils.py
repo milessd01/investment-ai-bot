@@ -1,6 +1,9 @@
 # utils.py (for your AI investment bot, not the backtester)
 import pandas as pd
 
+HISTORY_FILE = "stock_history.csv"
+
+
 def get_sp500_tickers():
     """
     Scrapes the current list of S&P 500 tickers from Wikipedia.
