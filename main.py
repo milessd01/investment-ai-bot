@@ -1,5 +1,5 @@
 # main.py (rewritten to implement smarter scoring + better data hygiene)
-
+import os
 import pandas as pd
 import yfinance as yf
 import smtplib
